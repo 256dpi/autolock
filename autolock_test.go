@@ -1,6 +1,7 @@
 package autolock
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -110,6 +111,46 @@ func TestTimeout(t *testing.T) {
 	list, err := testClient.Keys("autolock.*").Result()
 	assert.NoError(t, err)
 	assert.Empty(t, list)
+}
+
+func Example() {
+	// create client
+	client := redis.NewClient(&redis.Options{
+		Addr: "0.0.0.0:6379",
+	})
+	defer client.Close()
+
+	// acquire lock
+	lock, err := Acquire(client, "lock-key", &Options{
+		LockTimeout:     time.Second,
+		RefreshInterval: 10 * time.Millisecond,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// print status
+	fmt.Println(lock.Status())
+
+	// do some work
+	time.Sleep(100 * time.Millisecond)
+
+	// print status
+	fmt.Println(lock.Status())
+
+	// release lock
+	err = lock.Release()
+	if err != nil {
+		panic(err)
+	}
+
+	// print status
+	fmt.Println(lock.Status())
+
+	// Output:
+	// true <nil>
+	// true <nil>
+	// false <nil>
 }
 
 func Benchmark(b *testing.B) {
